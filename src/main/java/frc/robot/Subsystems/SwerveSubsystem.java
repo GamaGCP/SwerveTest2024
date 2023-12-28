@@ -6,6 +6,7 @@ import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
@@ -20,6 +21,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants;
+import frc.robot.Robot;
 
 public class SwerveSubsystem extends SubsystemBase {
     private ShuffleboardTab modualTab = Shuffleboard.getTab("Modual Info");
@@ -45,6 +47,8 @@ public class SwerveSubsystem extends SubsystemBase {
     
     private final AHRS gyro;
 
+    private Pose2d simOdometryPose;
+
 //create the swereve moduals
     public SwerveSubsystem()
     {
@@ -65,6 +69,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
      this.driveOdometry = 
       new SwerveDriveOdometry(DriveConstants.kDriveKinematics, getYaw(), getModulePositions());
+
+      simOdometryPose = driveOdometry.getPoseMeters();
 
       field = new Field2d();
     SmartDashboard.putData("Field", field);
@@ -114,11 +120,16 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getPose() 
       {
+        if(Robot.isReal()){
         return driveOdometry.getPoseMeters();
+        } else{
+          return simOdometryPose;
+        }
       }
 
       public void resetOdometry(Pose2d pose){
         driveOdometry.resetPosition(getYaw(), getModulePositions(), pose);
+        simOdometryPose = pose;
       }
 
       public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative)
@@ -181,11 +192,24 @@ public class SwerveSubsystem extends SubsystemBase {
       public double getTurnRate(){
         return gyro.getRate() * (DriveConstants.invertGyro ? -1.0 : 1.0);
       }
-    
+    public void updateOdometry() {
+    driveOdometry.update(getYaw(), getModulePositions());
+
+    if (Robot.isSimulation()) {
+      SwerveModuleState[] measuredStates = getModuleStates();
+      ChassisSpeeds speeds = Constants.DriveConstants.kDriveKinematics.toChassisSpeeds(measuredStates);
+      simOdometryPose =
+          simOdometryPose.exp(
+              new Twist2d(
+                  speeds.vxMetersPerSecond * .02,
+                  speeds.vyMetersPerSecond * .02,
+                  speeds.omegaRadiansPerSecond * .02));
+    }
+  }
 
     public void periodic() 
         {
-        driveOdometry.update(getYaw(), getModulePositions());
+        updateOdometry();
         field.setRobotPose(getPose());
     
         for (SwerveModule mod : mSwerveMods) 
