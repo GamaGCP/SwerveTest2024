@@ -120,11 +120,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getPose() 
       {
-        if(Robot.isReal()){
         return driveOdometry.getPoseMeters();
-        } else{
-          return simOdometryPose;
-        }
       }
 
       public void resetOdometry(Pose2d pose){
@@ -194,17 +190,6 @@ public class SwerveSubsystem extends SubsystemBase {
       }
     public void updateOdometry() {
     driveOdometry.update(getYaw(), getModulePositions());
-
-    if (Robot.isSimulation()) {
-      SwerveModuleState[] measuredStates = getModuleStates();
-      ChassisSpeeds speeds = Constants.DriveConstants.kDriveKinematics.toChassisSpeeds(measuredStates);
-      simOdometryPose =
-          simOdometryPose.exp(
-              new Twist2d(
-                  speeds.vxMetersPerSecond * .02,
-                  speeds.vyMetersPerSecond * .02,
-                  speeds.omegaRadiansPerSecond * .02));
-    }
   }
 
     public void periodic() 
