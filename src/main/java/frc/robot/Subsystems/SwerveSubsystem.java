@@ -4,14 +4,18 @@ import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -21,7 +25,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants;
-import frc.robot.Robot;
+import frc.robot.Vision;
 
 public class SwerveSubsystem extends SubsystemBase {
     private ShuffleboardTab modualTab = Shuffleboard.getTab("Modual Info");
@@ -40,14 +44,17 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private SwerveModule[] mSwerveMods;
 
-    private SwerveDriveOdometry driveOdometry;
+    private SwerveDrivePoseEstimator driveOdometry;
+
+    
+
 
     private Field2d field;
 
     
     private final AHRS gyro;
 
-    private Pose2d simOdometryPose;
+    
 
 //create the swereve moduals
     public SwerveSubsystem()
@@ -67,11 +74,13 @@ public class SwerveSubsystem extends SubsystemBase {
         //Timer.delay(1);
     resetToAbsolute2();
 
+    //standerd deviations for pose estimator-how much we trust either thing
+    var stateStdDevs = VecBuilder.fill(0.1, 0.1, 0.1);
+    var visionStdDevs = VecBuilder.fill(1, 1, 1);
+
      this.driveOdometry = 
-      new SwerveDriveOdometry(DriveConstants.kDriveKinematics, getYaw(), getModulePositions());
-
-      simOdometryPose = driveOdometry.getPoseMeters();
-
+      new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getYaw(), getModulePositions(), new Pose2d(), stateStdDevs, visionStdDevs);
+  
       field = new Field2d();
     SmartDashboard.putData("Field", field);
 
@@ -120,12 +129,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getPose() 
       {
-        return driveOdometry.getPoseMeters();
+        return driveOdometry.getEstimatedPosition();
       }
 
       public void resetOdometry(Pose2d pose){
         driveOdometry.resetPosition(getYaw(), getModulePositions(), pose);
-        simOdometryPose = pose;
+        
       }
 
       public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative)
@@ -192,7 +201,20 @@ public class SwerveSubsystem extends SubsystemBase {
     driveOdometry.update(getYaw(), getModulePositions());
   }
 
-    public void periodic() 
+   public void addVisionMeasurement(Pose2d visionMeasurement, double timestampSeconds) {
+        driveOdometry.addVisionMeasurement(visionMeasurement, timestampSeconds);
+    }
+
+    
+    public void addVisionMeasurement(
+            Pose2d visionMeasurement, double timestampSeconds, Matrix<N3, N1> stdDevs) {
+        driveOdometry.addVisionMeasurement(visionMeasurement, timestampSeconds, stdDevs);
+    }
+
+     
+
+  @Override
+  public void periodic() 
         {
         updateOdometry();
         field.setRobotPose(getPose());
@@ -211,5 +233,9 @@ public class SwerveSubsystem extends SubsystemBase {
           SmartDashboard.putNumber(
               "Mod " + mod.moduleNumber + " Drive Motor Voltage", mod.appliedDriveVoltage());*/
             }
+            
+            
+        
+             
         }
       }
