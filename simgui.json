@@ -38,5 +38,8 @@
       "/SmartDashboard/Auto Chooser": "String Chooser",
       "/SmartDashboard/Field": "Field2d"
     }
+  },
+  "NetworkTables View": {
+    "visible": false
   }
 }

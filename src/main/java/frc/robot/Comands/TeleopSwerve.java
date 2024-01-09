@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Vision;
+// import frc.robot.Vision;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.Subsystems.SwerveSubsystem;
@@ -13,7 +13,7 @@ import frc.robot.Subsystems.SwerveSubsystem;
 public class TeleopSwerve extends Command {
 
     private final SwerveSubsystem swerveSubsystem;
-    private final Vision visionSubSystem;
+    // private final Vision visionSubSystem;
     private final Supplier<Double> xSpdFunction, ySpdFunction, turningSpdFunction;
     private final Supplier<Boolean> fieldOriented;
     private final SlewRateLimiter xLimiter, yLimiter, turningLimiter;
@@ -24,10 +24,11 @@ public class TeleopSwerve extends Command {
     Supplier<Double> xSpdFunction,
     Supplier<Double> ySpdFunction,
     Supplier<Double> turningSpdFunction,
-    Supplier<Boolean> fieldOrientedFunction,
-    Vision visionSubSystem) {
+    Supplier<Boolean> fieldOrientedFunction)//,
+    // Vision visionSubSystem) 
+    {
         this.swerveSubsystem = swerveSubsystem;
-        this.visionSubSystem = visionSubSystem;
+        // this.visionSubSystem = visionSubSystem;
         this.xSpdFunction = xSpdFunction;
         this.ySpdFunction = ySpdFunction;
         this.turningSpdFunction = turningSpdFunction;
@@ -36,7 +37,7 @@ public class TeleopSwerve extends Command {
         this.yLimiter = new SlewRateLimiter(DriveConstants.kTeleDriveMaxAccelerationUnitsPerSecond);
         this.turningLimiter = new SlewRateLimiter(DriveConstants.kTeleDriveMaxAngularAccelerationUnitsPerSecond);
         addRequirements(swerveSubsystem);
-        addRequirements(visionSubSystem);
+        // addRequirements(visionSubSystem);
     }
 
     @Override
@@ -70,16 +71,16 @@ public class TeleopSwerve extends Command {
           SmartDashboard.putNumber("rotationComponent", turningSpeed);
 
           //vision
-          var visionEst = visionSubSystem.getEstimatedGlobalPose();
-                   visionEst.ifPresent(
-                           est -> {
-                               var estPose = est.estimatedPose.toPose2d();
-                               // Change our trust in the measurement based on the tags we can see
-                               var estStdDevs = visionSubSystem.getEstimationStdDevs(estPose);
+        //   var visionEst = visionSubSystem.getEstimatedGlobalPose();
+        //            visionEst.ifPresent(
+        //                    est -> {
+        //                        var estPose = est.estimatedPose.toPose2d();
+        //                        // Change our trust in the measurement based on the tags we can see
+        //                        var estStdDevs = visionSubSystem.getEstimationStdDevs(estPose);
            
-                               swerveSubsystem.addVisionMeasurement(
-                                       est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
-                           });
+        //                        swerveSubsystem.addVisionMeasurement(
+        //                                est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
+        //                    });
            
                    // Apply a random offset to pose estimator to test vision correction // MOVE TO ROBOTCONTAINER
                    // if (controller.getBButtonPressed()) {
