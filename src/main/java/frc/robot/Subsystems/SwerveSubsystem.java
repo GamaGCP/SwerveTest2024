@@ -44,15 +44,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private SwerveDrivePoseEstimator driveOdometry;
 
-    
-
-
     private Field2d field;
 
-    
     private final AHRS gyro;
-
-    
 
 //create the swereve moduals
     public SwerveSubsystem()
@@ -69,7 +63,7 @@ public class SwerveSubsystem extends SubsystemBase {
           new SwerveModule(3, Constants.DriveConstants.mod3.constants, modualTab.getLayout("Front Right Module", BuiltInLayouts.kList).withSize(2, 4).withPosition(0, 4))
         };
 
-        //Timer.delay(1);
+        
     resetToAbsolute2();
 
     //standerd deviations for pose estimator-how much we trust either thing
@@ -77,7 +71,7 @@ public class SwerveSubsystem extends SubsystemBase {
     var visionStdDevs = VecBuilder.fill(1, 1, 1);
 
      this.driveOdometry = 
-      new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getYaw(), getModulePositions(), new Pose2d(), stateStdDevs, visionStdDevs);
+      new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getYaw(), getModulePositions(), new Pose2d(), stateStdDevs, visionStdDevs); //add a function to get starting pose?
   
       field = new Field2d();
     SmartDashboard.putData("Field", field);
@@ -221,15 +215,12 @@ public class SwerveSubsystem extends SubsystemBase {
             {
     
           SmartDashboard.putNumber(
-              "Mod " + mod.moduleNumber + " Cancoder", mod.getCanCoder().getDegrees());
+              "Mod " + mod.moduleNumber + " Cancoder", mod.getCanCoderRot2D().getDegrees());
           SmartDashboard.putNumber(
               "Mod " + mod.moduleNumber + " Integrated", mod.getState().angle.getDegrees());
           SmartDashboard.putNumber(
               "Mod " + mod.moduleNumber + " Velocity", mod.getState().speedMetersPerSecond);
-          /*SmartDashboard.putNumber(
-              "Mod " + mod.moduleNumber + " Angle Motor Voltage", mod.appliedAngleVoltage());
-          SmartDashboard.putNumber(
-              "Mod " + mod.moduleNumber + " Drive Motor Voltage", mod.appliedDriveVoltage());*/
+         
             }
             
             

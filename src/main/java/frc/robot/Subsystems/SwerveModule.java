@@ -1,11 +1,10 @@
 package frc.robot.Subsystems;
 
+
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.MagnetSensorConfigs;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
-// import com.ctre.phoenix.sensors.CANCoder;
-// import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -17,13 +16,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-//import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-//import frc.robot.RobotContainer;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ModuleConstants;
 import frc.Lib.config.*;
@@ -50,7 +45,7 @@ public class SwerveModule extends SubsystemBase {
 
     public int moduleNumber;
 
-    ShuffleboardTab PIDtab = Shuffleboard.getTab("PID Tuning");
+   
 
     
 
@@ -65,7 +60,7 @@ public class SwerveModule extends SubsystemBase {
         this.moduleNumber = moduleNumber;
         this.CANCoder = new CANcoder(moduleConstraints.cancoderID);
         var CANCoderConfiger = this.CANCoder.getConfigurator();
-       MagnetConfigs.MagnetOffset = (-1 * moduleConstraints.angleOffset);
+       MagnetConfigs.MagnetOffset = (-1 * (moduleConstraints.angleOffset/360));
        MagnetConfigs.AbsoluteSensorRange =   AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
        CANCoderConfiguration.withMagnetSensor(MagnetConfigs);
        CANCoderConfiger.apply(MagnetConfigs);
@@ -98,10 +93,10 @@ public class SwerveModule extends SubsystemBase {
     }
 
     public SwerveModulePosition  getPosition() {
-        return new SwerveModulePosition(driveEncoder.getPosition(), new Rotation2d(getTurnPosition()));
+        return new SwerveModulePosition(driveEncoder.getPosition(), getCanCoderRot2D());
     }
 
-    public Rotation2d getCanCoder() {
+    public Rotation2d getCanCoderRot2D() {
        var absolutePosition = CANCoder.getAbsolutePosition();
        var absoluteAngle = absolutePosition.getValue() * 2 * Math.PI;
     
@@ -117,9 +112,6 @@ public class SwerveModule extends SubsystemBase {
         double absolutePosition =  -getTurnPosition();
         turnEncoder.setPosition(absolutePosition);
         driveEncoder.setPosition(0.0);
-        SmartDashboard.putNumber("Reset Cancoder absolute position", absolutePosition);
-        SmartDashboard.putNumber("Reset Cancoder value", getCanCoder().getDegrees());
-        
       }
 
     public double getDriveVelocity() {
@@ -136,18 +128,17 @@ public class SwerveModule extends SubsystemBase {
     }
 
     public SwerveModuleState getState() {
-        return new SwerveModuleState(getDriveVelocity(), new Rotation2d(getTurnPosition()));
+        return new SwerveModuleState(getDriveVelocity(), getCanCoderRot2D());
     }
 
     public void SetDesiredState(SwerveModuleState desieredState) {
-        if(Math.abs(desieredState.speedMetersPerSecond) < 0.001) {
+        if(Math.abs(desieredState.speedMetersPerSecond) < 0.01) {
             stop();
             return;
         }
         var CANSignal = CANCoder.getAbsolutePosition();
         SwerveModuleState state = SwerveModuleState.optimize(desieredState, getState().angle);
         SmartDashboard.putNumber("SpeedMetersPerSecond", getDriveVelocity());
-        SmartDashboard.putNumber("AbsoluteEncoderRad", getTurnPosition());
         SmartDashboard.putNumber("AbsoluteEncoderAngle", CANSignal.getValueAsDouble());
         SmartDashboard.putNumber("desiredState", state.speedMetersPerSecond);
 
@@ -163,11 +154,6 @@ public class SwerveModule extends SubsystemBase {
         SmartDashboard.putNumber("turnPID Setpoint Velocity", turningPIDControler.getSetpoint().velocity);
     SmartDashboard.putNumber("PID driveOutput", driveOutput);
     SmartDashboard.putNumber("PID turnOutput", turnOutput);
-    SmartDashboard.putNumber("Feedforward", driveFeedForward.calculate(desieredState.speedMetersPerSecond));
-    SmartDashboard.putNumber("PID Output", drivePIDControler.calculate(getDriveVelocity(), state.speedMetersPerSecond));
-
-        
-
     }
 
     public void stop() {
