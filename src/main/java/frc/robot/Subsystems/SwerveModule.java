@@ -19,6 +19,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ModuleConstants;
 import frc.Lib.config.*;
@@ -30,7 +31,6 @@ public class SwerveModule extends SubsystemBase {
     private final CANSparkMax turnMotor;
 
     private final RelativeEncoder driveEncoder;
-    private final RelativeEncoder turnEncoder;
 
     //feedback
     private final ProfiledPIDController  turningPIDControler = new ProfiledPIDController(ModuleConstants.kPTurning, ModuleConstants.kITurning, ModuleConstants.kDturning, new TrapezoidProfile.Constraints(DriveConstants.kPhysicalMaxAngularSpeedRadiansPerSecond, DriveConstants.kPhysicalMaxAngularAccelerationRadiansPerSecond));
@@ -44,6 +44,7 @@ public class SwerveModule extends SubsystemBase {
     private final CANcoder CANCoder ;
 
     public int moduleNumber;
+    private Rotation2d lastAngle;
 
    
 
@@ -60,8 +61,8 @@ public class SwerveModule extends SubsystemBase {
         this.moduleNumber = moduleNumber;
         this.CANCoder = new CANcoder(moduleConstraints.cancoderID);
         var CANCoderConfiger = this.CANCoder.getConfigurator();
-       MagnetConfigs.MagnetOffset = (-1 * (moduleConstraints.angleOffset/360));
-       MagnetConfigs.AbsoluteSensorRange =   AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+       MagnetConfigs.MagnetOffset = (moduleConstraints.angleOffset/360);
+       MagnetConfigs.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1;
        CANCoderConfiguration.withMagnetSensor(MagnetConfigs);
        CANCoderConfiger.apply(MagnetConfigs);
        
@@ -78,18 +79,14 @@ public class SwerveModule extends SubsystemBase {
         //turnMotor.setInverted(turnMotorReversed);    // no use
 
         driveEncoder = driveMotor.getEncoder();
-        turnEncoder = turnMotor.getEncoder();
 
         driveEncoder.setPositionConversionFactor(ModuleConstants.kDriveEncoderRot2Meter);
         driveEncoder.setVelocityConversionFactor(ModuleConstants.kDriveEncoderRpm2MeterPerSecond);
-        turnEncoder.setPositionConversionFactor(ModuleConstants.kTurnEncoderRot2Rad);
-        turnEncoder.setVelocityConversionFactor(ModuleConstants.kTurnEncoderRpm2RadperSecond);
-
        
         turningPIDControler.enableContinuousInput(-Math.PI, Math.PI);
 
         resetDriveEncoders();
-        resetTurnEncoders();
+        this.lastAngle = getState().angle;
     }
 
     public SwerveModulePosition  getPosition() {
@@ -109,9 +106,7 @@ public class SwerveModule extends SubsystemBase {
     }
 
     public void resetToAbsolute() {
-        double absolutePosition =  -getTurnPosition();
-        turnEncoder.setPosition(absolutePosition);
-        driveEncoder.setPosition(0.0);
+        lastAngle = Rotation2d.fromDegrees(0);
       }
 
     public double getDriveVelocity() {
@@ -122,22 +117,17 @@ public class SwerveModule extends SubsystemBase {
         driveEncoder.setPosition(0.0);
         
     }
-    public void resetTurnEncoders() {
-        
-        turnEncoder.setPosition(0.0);
-    }
+   
 
     public SwerveModuleState getState() {
         return new SwerveModuleState(getDriveVelocity(), getCanCoderRot2D());
     }
 
     public void SetDesiredState(SwerveModuleState desieredState) {
-        if(Math.abs(desieredState.speedMetersPerSecond) < 0.01) {
-            stop();
-            return;
-        }
         var CANSignal = CANCoder.getAbsolutePosition();
         SwerveModuleState state = SwerveModuleState.optimize(desieredState, getState().angle);
+        Rotation2d desiredAngle = (Math.abs(desieredState.speedMetersPerSecond) < (Constants.DriveConstants.kPhysicalMaxSpeedMeterPerSecond *0.01)) ? this.lastAngle : state.angle;
+        this.lastAngle = desiredAngle;
         SmartDashboard.putNumber("SpeedMetersPerSecond", getDriveVelocity());
         SmartDashboard.putNumber("AbsoluteEncoderAngle", CANSignal.getValueAsDouble());
         SmartDashboard.putNumber("desiredState", state.speedMetersPerSecond);
@@ -145,7 +135,7 @@ public class SwerveModule extends SubsystemBase {
 
 
         final double drivePID = drivePIDControler.calculate(getDriveVelocity(), state.speedMetersPerSecond);
-        final var turnOutput = turningPIDControler.calculate(getTurnPosition(), state.angle.getRadians());
+        final var turnOutput = turningPIDControler.calculate(getTurnPosition(), desiredAngle.getRadians());
         final double driveFF = driveFeedForward.calculate(state.speedMetersPerSecond);
         final double driveOutput = drivePID + driveFF;
         driveMotor.setVoltage(driveOutput);
@@ -156,7 +146,7 @@ public class SwerveModule extends SubsystemBase {
     SmartDashboard.putNumber("PID turnOutput", turnOutput);
     }
 
-    public void stop() {
+    public void stop() {    
         driveMotor.set(0.0);
         turnMotor.set(0.0);
     }

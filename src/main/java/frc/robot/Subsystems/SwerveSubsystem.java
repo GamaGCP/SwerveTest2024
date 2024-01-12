@@ -172,7 +172,6 @@ public class SwerveSubsystem extends SubsystemBase {
       public void resetEncoders(){
         for (SwerveModule mod : mSwerveMods){
             mod.resetDriveEncoders();
-            mod.resetTurnEncoders();
         }
       }
 

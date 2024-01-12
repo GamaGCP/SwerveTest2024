@@ -45,15 +45,9 @@ public class Constants {
         public static final double kITurning = 0.0000001;
         public static final double kDturning = 0.0001;
 
-        //Turning FeedForward Values
-
-        public static final double kSTurning = 0.0; //Find using SysID
-        public static final double kVTurning = 0.0; 
-        public static final double kATurning = 0.0;
-
         //Drive Pid Values
 
-        public static final double kPDrive = 0.1;//FIXME
+        public static final double kPDrive = 0.001;//FIXME
         public static final double kIDrive = 0.0;
         public static final double kDDive = 0.0;
 
@@ -97,10 +91,10 @@ public class Constants {
         
         
         public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
-                new Translation2d(kWheelBase / 2, kTrackWidth / 2),
-                new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
-                new Translation2d(-kWheelBase / 2, kTrackWidth / 2),
-                new Translation2d(-kWheelBase / 2, -kTrackWidth / 2));
+                new Translation2d(kWheelBase / 2, kTrackWidth / 2), //Front Left
+                new Translation2d(kWheelBase / 2, -kTrackWidth / 2),//Front Right
+                new Translation2d(-kWheelBase / 2, kTrackWidth / 2),//Back Left
+                new Translation2d(-kWheelBase / 2, -kTrackWidth / 2));//Beck Right
 
            /* Module Specific Constants */
     /* Front left Module - Module 0 */
